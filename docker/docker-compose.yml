@@ -1,0 +1,50 @@
+version: "3.3"
+
+services:
+    mosquitto:
+        image: eclipse-mosquitto
+        restart: unless-stopped
+        ports:
+            - "1883:1883"
+            - "8883:8883"
+        volumes:
+            - ./mosquitto/config:/mosquitto/config
+            - ./mosquitto/cert:/mosquitto/cert
+    influxdb:
+        image: influxdb:latest
+        container_name: influxdb
+        restart:
+            always
+        ports:
+            - "8086:8086"
+       # networks:
+           # - iot-stack
+        volumes:
+            - ./influxdb/data:/var/lib/influxdb
+            - ./influxdb/logs:/var/log/influxdb
+        environment:    
+            - INFLUXDB_DB=home
+            - INFLUXDB_ADMIN_USER=pi
+            - INFLUXDB_ADMIN_PASSWORD=cageclamp
+    grafana:
+        image: grafana/grafana:8.5.5
+        container_name: energy-grafana
+        user: "0"
+        restart:
+            always
+        ports:
+            - "3000:3000"
+        # networks:
+            # - iot-stack
+        volumes:
+            - ./grafana:/var/lib/grafana
+            - ./grafana/grafana-provisioning:/etc/grafana/provisioning
+            - ./grafana/logs:/var/log/grafana
+            
+        depends_on:
+            - influxdb
+        environment:
+            - GF_SECURITY_ADMIN_USER=bas
+            - GF_SECURITY_ADMIN_PASSWORD=cageclamp
+        links:
+            - influxdb
